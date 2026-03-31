@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartShift — AI 자동 교대 근무 스케줄러</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    :root {
+      --brand: #4f46e5;
+      --brand-dark: #3730a3;
+      --brand-light: #eef2ff;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+    }
+
+    * { scroll-behavior: smooth; }
+
+    /* ── NAVBAR ── */
+    .navbar { background: #fff; border-bottom: 1px solid #e5e7eb; }
+    .navbar-brand { font-weight: 800; color: var(--brand) !important; font-size: 1.4rem; }
+    .nav-btn-login  { border: 1.5px solid var(--brand); color: var(--brand); border-radius: 8px; padding: 6px 18px; font-weight: 600; }
+    .nav-btn-login:hover { background: var(--brand-light); }
+    .nav-btn-start  { background: var(--brand); color: #fff !important; border-radius: 8px; padding: 6px 18px; font-weight: 600; }
+    .nav-btn-start:hover { background: var(--brand-dark); }
+
+    /* ── HERO ── */
+    .hero-section {
+      background: linear-gradient(135deg, #f0f4ff 0%, #e8e3ff 100%);
+      padding: 110px 0 80px;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: var(--brand-light);
+      color: var(--brand);
+      font-size: .8rem;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 999px;
+      border: 1px solid #c7d2fe;
+      margin-bottom: 1.2rem;
+      letter-spacing: .04em;
+    }
+    .hero-title {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 900;
+      line-height: 1.2;
+      color: #111827;
+    }
+    .hero-title span { color: var(--brand); }
+    .hero-sub {
+      font-size: 1.15rem;
+      color: #4b5563;
+      margin: 1.4rem 0 2rem;
+      line-height: 1.8;
+    }
+    .btn-hero-cta {
+      background: var(--brand);
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 14px 36px;
+      border-radius: 12px;
+      border: none;
+      box-shadow: 0 4px 24px rgba(79,70,229,.35);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn-hero-cta:hover {
+      background: var(--brand-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(79,70,229,.45);
+    }
+    .hero-trust { font-size: .85rem; color: #9ca3af; margin-top: 1rem; }
+    .hero-trust i { color: #10b981; }
+
+    /* ── MOCK SCHEDULE PREVIEW ── */
+    .schedule-preview {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.12);
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+    }
+    .preview-header {
+      background: var(--brand);
+      color: #fff;
+      padding: 14px 20px;
+      font-weight: 700;
+      font-size: .9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preview-body { padding: 0; }
+    .preview-table th { background: #f8faff; font-size: .75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; }
+    .preview-table td, .preview-table th { padding: 8px 10px; font-size: .82rem; text-align: center; border-color: #f3f4f6; }
+    .shift-morning   { background:#fef3c7; color:#92400e; border-radius:6px; padding:2px 8px; font-weight:600; font-size:.75rem; }
+    .shift-afternoon { background:#dbeafe; color:#1e40af; border-radius:6px; padding:2px 8px; font-weight:600; font-size:.75rem; }
+    .shift-night     { background:#ede9fe; color:#5b21b6; border-radius:6px; padding:2px 8px; font-weight:600; font-size:.75rem; }
+    .shift-off       { background:#f3f4f6; color:#9ca3af; border-radius:6px; padding:2px 8px; font-weight:600; font-size:.75rem; }
+    .ai-badge { background:#dcfce7; color:#166534; font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:999px; }
+
+    /* ── FEATURES ── */
+    .features-section { padding: 90px 0; background: #fff; }
+    .section-tag { font-size:.8rem; font-weight:700; color:var(--brand); letter-spacing:.08em; text-transform:uppercase; }
+    .section-title { font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 900; color: #111827; margin-top:.5rem; }
+    .feature-card {
+      border: 1.5px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 36px 28px;
+      height: 100%;
+      transition: border-color .2s, box-shadow .2s, transform .2s;
+    }
+    .feature-card:hover {
+      border-color: var(--brand);
+      box-shadow: 0 8px 32px rgba(79,70,229,.12);
+      transform: translateY(-4px);
+    }
+    .feature-icon {
+      width: 60px; height: 60px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.7rem;
+      margin-bottom: 1.2rem;
+    }
+    .icon-green  { background: #d1fae5; color: #059669; }
+    .icon-blue   { background: #dbeafe; color: #2563eb; }
+    .icon-purple { background: #ede9fe; color: #7c3aed; }
+    .feature-card h5 { font-weight: 800; color: #111827; margin-bottom: .6rem; }
+    .feature-card p  { color: #6b7280; font-size: .95rem; line-height: 1.7; margin: 0; }
+
+    /* ── SOCIAL PROOF ── */
+    .proof-section { background: var(--gray-50); padding: 80px 0; }
+    .stat-card { text-align: center; }
+    .stat-num  { font-size: 3rem; font-weight: 900; color: var(--brand); line-height: 1; }
+    .stat-unit { font-size: 1.5rem; font-weight: 900; color: var(--brand); }
+    .stat-desc { color: #6b7280; font-size: .9rem; margin-top: .3rem; }
+
+    /* ── HOW IT WORKS ── */
+    .how-section { padding: 90px 0; background: #fff; }
+    .step-num {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--brand);
+      color: #fff;
+      font-weight: 900;
+      font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-connector { width: 2px; height: 40px; background: #e5e7eb; margin: 6px 0 6px 21px; }
+
+    /* ── CTA BOTTOM ── */
+    .cta-section {
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+      padding: 90px 0;
+      color: #fff;
+    }
+    .btn-cta-white {
+      background: #fff;
+      color: var(--brand);
+      font-weight: 800;
+      padding: 14px 40px;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      border: none;
+      box-shadow: 0 4px 24px rgba(0,0,0,.15);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn-cta-white:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,0,0,.25);
+    }
+
+    /* ── FOOTER ── */
+    .footer { background: #111827; color: #9ca3af; padding: 40px 0; font-size: .88rem; }
+    .footer a { color: #9ca3af; text-decoration: none; }
+    .footer a:hover { color: #fff; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════ NAVBAR -->
+<nav class="navbar navbar-expand-lg sticky-top">
+  <div class="container">
+    <a class="navbar-brand" href="{% url 'landing' %}">
+      <i class="bi bi-grid-3x3-gap-fill me-1"></i>SmartShift
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav me-auto gap-3 ms-4">
+        <li class="nav-item"><a class="nav-link fw-500 text-secondary" href="#features">기능</a></li>
+        <li class="nav-item"><a class="nav-link fw-500 text-secondary" href="#how">사용방법</a></li>
+        <li class="nav-item"><a class="nav-link fw-500 text-secondary" href="#stats">실적</a></li>
+      </ul>
+      <div class="d-flex gap-2 mt-2 mt-lg-0">
+        {% if user.is_authenticated %}
+          <a href="{% url 'dashboard' %}" class="nav-btn-start btn">대시보드 바로가기</a>
+        {% else %}
+          <a href="{% url 'login' %}" class="nav-btn-login btn">로그인</a>
+          <a href="{% url 'signup' %}" class="nav-btn-start btn">무료 시작</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════ HERO -->
+<section class="hero-section">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+        <div class="hero-badge">
+          <i class="bi bi-stars me-1"></i>AI 기반 자동 스케줄링
+        </div>
+        <h1 class="hero-title">
+          매주 머리 아픈<br/>
+          교대 근무표 짜기,<br/>
+          <span>이제 AI에게 맡기세요.</span>
+        </h1>
+        <p class="hero-sub">
+          근로기준법·직원 휴무 요청·최소 인력까지 <strong>모든 제약조건을 자동으로 충족</strong>하는
+          스케줄을 단 3초 만에 생성합니다.<br/>
+          매니저의 수작업 시간을 주 4시간에서 <strong>0분으로</strong> 줄이세요.
+        </p>
+        <a href="{% url 'dashboard' %}" class="btn btn-hero-cta" id="heroCtaBtn">
+          <i class="bi bi-lightning-charge-fill me-2"></i>AI 스케줄링 시작하기
+        </a>
+        <p class="hero-trust mt-3">
+          <i class="bi bi-check-circle-fill me-1"></i>무료 체험 · 신용카드 불필요
+          &nbsp;&nbsp;
+          <i class="bi bi-check-circle-fill me-1"></i>30초 만에 시작
+        </p>
+      </div>
+      <div class="col-lg-6">
+        <!-- Mock 스케줄 프리뷰 -->
+        <div class="schedule-preview">
+          <div class="preview-header">
+            <i class="bi bi-calendar-check"></i>
+            AI 생성 스케줄 미리보기
+            <span class="ai-badge ms-auto">AI 최적화 완료</span>
+          </div>
+          <div class="preview-body">
+            <table class="table table-borderless preview-table mb-0">
+              <thead>
+                <tr>
+                  <th>직원</th>
+                  <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th><th>일</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="fw-bold text-start">김민준</td>
+                  <td><span class="shift-morning">오전</span></td>
+                  <td><span class="shift-morning">오전</span></td>
+                  <td><span class="shift-off">휴무</span></td>
+                  <td><span class="shift-afternoon">오후</span></td>
+                  <td><span class="shift-afternoon">오후</span></td>
+                  <td><span class="shift-off">휴무</span></td>
+                  <td><span class="shift-night">야간</span></td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-start">이서연</td>
+                  <td><span class="shift-off">휴무</span></td>
+                  <td><span class="shift-off">휴무</span></td>
+                  <td><span class="shift-afternoon">오후</span></td>
+                  <td><span class="shift-morning">오전</span></td>
+                  <td><span class="shift-night">야간</span></td>
+                  <td><span class="shift-morning">오전</span></td>
+                  <td><span class="shift-afternoon">오후</span></td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-start">박도윤</td>
+                  <td><span class="shift-night">야간</span></td>
+                  <td><span class="shift-afternoon">오후</span></td>
+                  <td><span class="shift-off">휴무</span></td>
+                  <td><span class="shift-off">휴무</span></td>
+                  <td><span class="shift-morning">오전</span></td>
+                  <td><span class="shift-afternoon">오후</span></td>
+                  <td><span class="shift-morning">오전</span></td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-start">최하은</td>
+                  <td><span class="shift-afternoon">오후</span></td>
+                  <td><span class="shift-night">야간</span></td>
+                  <td><span class="shift-morning">오전</span></td>
+                  <td><span class="shift-afternoon">오후</span></td>
+                  <td><span class="shift-off">휴무</span></td>
+                  <td><span class="shift-off">휴무</span></td>
+                  <td><span class="shift-night">야간</span></td>
+                </tr>
+                <tr>
+                  <td class="fw-bold text-start">정시우</td>
+                  <td><span class="shift-off">휴무</span></td>
+                  <td><span class="shift-morning">오전</span></td>
+                  <td><span class="shift-night">야간</span></td>
+                  <td><span class="shift-night">야간</span></td>
+                  <td><span class="shift-afternoon">오후</span></td>
+                  <td><span class="shift-morning">오전</span></td>
+                  <td><span class="shift-off">휴무</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════ FEATURES -->
+<section class="features-section" id="features">
+  <div class="container">
+    <div class="text-center mb-5">
+      <div class="section-tag">핵심 기능</div>
+      <h2 class="section-title">왜 SmartShift인가요?</h2>
+      <p class="text-secondary mt-2">복잡한 제약조건을 AI가 모두 처리합니다. 매니저는 확인만 하면 됩니다.</p>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="feature-card">
+          <div class="feature-icon icon-green">
+            <i class="bi bi-shield-check"></i>
+          </div>
+          <h5>근로기준법 자동 준수</h5>
+          <p>연속 야간 근무 제한, 최소 휴식 시간, 주간 최대 근무일을 AI가 자동으로 계산합니다. 법 위반 걱정은 0%.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card">
+          <div class="feature-icon icon-blue">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <h5>직원 휴무일 100% 반영</h5>
+          <p>직원별 휴무 요청을 스케줄 생성 전에 등록하면, CP-SAT 솔버가 요청을 최대한 만족하는 최적해를 찾아냅니다.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card">
+          <div class="feature-icon icon-purple">
+            <i class="bi bi-lightning-charge-fill"></i>
+          </div>
+          <h5>단 3초 만에 스케줄 완성</h5>
+          <p>Google OR-Tools의 CP-SAT 엔진이 수천 가지 경우의 수를 순식간에 탐색합니다. 수기 작업 대비 99% 시간 절감.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════ STATS -->
+<section class="proof-section" id="stats">
+  <div class="container">
+    <div class="row g-4 text-center">
+      <div class="col-6 col-md-3 stat-card">
+        <div><span class="stat-num">99</span><span class="stat-unit">%</span></div>
+        <div class="stat-desc">스케줄 생성 성공률</div>
+      </div>
+      <div class="col-6 col-md-3 stat-card">
+        <div><span class="stat-num">4</span><span class="stat-unit">h</span></div>
+        <div class="stat-desc">주당 절감 업무 시간</div>
+      </div>
+      <div class="col-6 col-md-3 stat-card">
+        <div><span class="stat-num">3</span><span class="stat-unit">초</span></div>
+        <div class="stat-desc">평균 스케줄 생성 시간</div>
+      </div>
+      <div class="col-6 col-md-3 stat-card">
+        <div><span class="stat-num">0</span><span class="stat-unit">건</span></div>
+        <div class="stat-desc">법 위반 스케줄 발생</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════ HOW IT WORKS -->
+<section class="how-section" id="how">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-5">
+        <div class="section-tag">사용 방법</div>
+        <h2 class="section-title">3단계로 끝내는<br/>스케줄 자동화</h2>
+      </div>
+      <div class="col-lg-7">
+        <div class="d-flex gap-4 align-items-start">
+          <div>
+            <div class="step-num">1</div>
+            <div class="step-connector"></div>
+            <div class="step-num">2</div>
+            <div class="step-connector"></div>
+            <div class="step-num">3</div>
+          </div>
+          <div class="d-flex flex-column gap-4 pt-1">
+            <div>
+              <h6 class="fw-800 mb-1">직원 정보 & 휴무 요청 등록</h6>
+              <p class="text-secondary mb-0 small">이름, 휴무 희망 요일을 입력합니다. 30초면 충분합니다.</p>
+            </div>
+            <div>
+              <h6 class="fw-800 mb-1">[AI 스케줄 생성] 버튼 클릭</h6>
+              <p class="text-secondary mb-0 small">CP-SAT AI가 모든 제약조건을 동시에 만족하는 최적 스케줄을 탐색합니다.</p>
+            </div>
+            <div>
+              <h6 class="fw-800 mb-1">결과 확인 & 공유</h6>
+              <p class="text-secondary mb-0 small">색상 코드로 한눈에 확인하고 바로 팀에 공유하세요.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════ BOTTOM CTA -->
+<section class="cta-section">
+  <div class="container text-center">
+    <h2 class="fw-900 fs-1 mb-3">지금 바로 시작해 보세요</h2>
+    <p class="mb-4 opacity-75 fs-5">무료로 체험하고, 스케줄 고민에서 해방되세요.</p>
+    <a href="{% url 'signup' %}" class="btn btn-cta-white">
+      <i class="bi bi-rocket-takeoff-fill me-2"></i>무료로 시작하기
+    </a>
+    <p class="mt-3 opacity-50 small">신용카드 없이 무료 · 언제든 탈퇴 가능</p>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════ FOOTER -->
+<footer class="footer">
+  <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+    <div class="fw-700 text-white"><i class="bi bi-grid-3x3-gap-fill me-1 text-indigo-400"></i>SmartShift</div>
+    <div>© 2024 SmartShift. All rights reserved.</div>
+    <div class="d-flex gap-3">
+      <a href="#">이용약관</a>
+      <a href="#">개인정보처리방침</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // 히어로 CTA 버튼: 로그인 상태 체크
+  document.getElementById('heroCtaBtn').addEventListener('click', function(e) {
+    {% if user.is_authenticated %}
+      // 이미 로그인 → 대시보드로 이동 (기본 href 동작)
+    {% else %}
+      e.preventDefault();
+      window.location.href = "{% url 'login' %}?next={% url 'dashboard' %}";
+    {% endif %}
+  });
+</script>
+</body>
+</html>

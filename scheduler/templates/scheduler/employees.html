@@ -1,0 +1,130 @@
+{% extends 'scheduler/base_app.html' %}
+{% block title %}직원 관리 — SmartShift{% endblock %}
+{% block nav_employees %}active{% endblock %}
+
+{% block extra_style %}
+<style>
+  .emp-card { background:#fff; border-radius:16px; border:1px solid #e5e7eb; overflow:hidden; }
+  .emp-card-header { padding:20px 24px; border-bottom:1px solid #f3f4f6; display:flex; justify-content:space-between; align-items:center; }
+  .emp-table th { font-size:.78rem; font-weight:700; color:#6b7280; text-transform:uppercase; background:#f9fafb; padding:12px 16px; }
+  .emp-table td { padding:13px 16px; vertical-align:middle; font-size:.9rem; border-color:#f3f4f6; }
+  .emp-avatar { width:36px; height:36px; border-radius:50%; background:var(--brand-light); color:var(--brand); display:flex; align-items:center; justify-content:center; font-weight:700; }
+  .off-tag { background:#f3f4f6; color:#374151; border-radius:6px; padding:2px 8px; font-size:.76rem; font-weight:600; margin-right:3px; }
+  .btn-add { background:var(--brand); color:#fff; font-weight:700; border-radius:10px; border:none; padding:9px 20px; font-size:.88rem; }
+  .btn-add:hover { background:var(--brand-dark); color:#fff; }
+  .btn-edit { background:#f3f4f6; color:#374151; border:none; border-radius:8px; padding:5px 12px; font-size:.8rem; font-weight:600; }
+  .btn-edit:hover { background:#e5e7eb; }
+  .btn-del  { background:#fff0f0; color:#dc2626; border:none; border-radius:8px; padding:5px 12px; font-size:.8rem; font-weight:600; }
+  .btn-del:hover { background:#fee2e2; }
+  .empty-row td { text-align:center; padding:50px; color:#9ca3af; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">직원 관리</h1>
+  <p class="page-sub">스케줄에 포함할 직원과 휴무 요청 요일을 관리합니다.</p>
+</div>
+
+<div class="emp-card">
+  <div class="emp-card-header">
+    <div>
+      <span style="font-weight:800; color:#111827;">전체 직원</span>
+      <span class="ms-2" style="background:#f3f4f6; color:#6b7280; border-radius:6px; padding:2px 9px; font-size:.8rem; font-weight:700;">{{ employees|length }}명</span>
+    </div>
+    <a href="{% url 'employee_create' %}" class="btn-add btn">
+      <i class="bi bi-plus-lg me-1"></i>직원 추가
+    </a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table emp-table mb-0">
+      <thead>
+        <tr>
+          <th style="width:50px;">#</th>
+          <th>이름</th>
+          <th>휴무 요청 요일</th>
+          <th style="width:120px; text-align:right;">관리</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in employees %}
+        <tr>
+          <td style="color:#9ca3af;">{{ forloop.counter }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="emp-avatar">{{ emp.name|first }}</div>
+              <span style="font-weight:700;">{{ emp.name }}</span>
+            </div>
+          </td>
+          <td>
+            {% if emp.off_days %}
+              {% for d in emp.off_days %}
+                <span class="off-tag">
+                  {% if d == 0 %}월{% elif d == 1 %}화{% elif d == 2 %}수{% elif d == 3 %}목{% elif d == 4 %}금{% elif d == 5 %}토{% else %}일{% endif %}
+                </span>
+              {% endfor %}
+            {% else %}
+              <span style="color:#d1d5db; font-size:.83rem;">요청 없음</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'employee_edit' emp.pk %}" class="btn-edit btn me-1">
+              <i class="bi bi-pencil me-1"></i>수정
+            </a>
+            <!-- 삭제 확인 모달 트리거 -->
+            <button type="button" class="btn-del btn"
+              data-bs-toggle="modal" data-bs-target="#deleteModal"
+              data-pk="{{ emp.pk }}" data-name="{{ emp.name }}">
+              <i class="bi bi-trash me-1"></i>삭제
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr class="empty-row">
+          <td colspan="4">
+            <i class="bi bi-person-plus fs-2 d-block mb-2"></i>
+            등록된 직원이 없습니다.<br/>
+            <a href="{% url 'employee_create' %}" style="color:var(--brand); font-weight:700;">첫 번째 직원 추가하기 →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 삭제 확인 모달 -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+    <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 20px 60px rgba(0,0,0,.15);">
+      <div class="modal-body text-center p-4">
+        <div style="width:54px; height:54px; background:#fee2e2; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:1.5rem; color:#dc2626;">
+          <i class="bi bi-trash"></i>
+        </div>
+        <h5 style="font-weight:800; color:#111827;" class="mb-1">직원을 삭제할까요?</h5>
+        <p class="text-secondary mb-3" style="font-size:.9rem;"><strong id="deleteEmpName"></strong> 직원 정보가 영구적으로 삭제됩니다.</p>
+        <form method="post" id="deleteForm">
+          {% csrf_token %}
+          <div class="d-flex gap-2">
+            <button type="button" class="btn flex-fill" style="background:#f3f4f6; font-weight:700; border-radius:10px;" data-bs-dismiss="modal">취소</button>
+            <button type="submit" class="btn flex-fill" style="background:#dc2626; color:#fff; font-weight:700; border-radius:10px;">삭제</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+  document.getElementById('deleteModal').addEventListener('show.bs.modal', function(e) {
+    const btn = e.relatedTarget;
+    const pk = btn.dataset.pk;
+    const name = btn.dataset.name;
+    document.getElementById('deleteEmpName').textContent = name;
+    document.getElementById('deleteForm').action = `/employees/${pk}/delete/`;
+  });
+</script>
+{% endblock %}

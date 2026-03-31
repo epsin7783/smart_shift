@@ -1,0 +1,246 @@
+{% extends 'scheduler/base_app.html' %}
+{% block title %}스케줄 생성 — SmartShift{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block extra_style %}
+<style>
+  .week-badge { background:var(--brand-light); color:var(--brand); font-size:.83rem; font-weight:700; padding:6px 14px; border-radius:8px; }
+  .panel-card { background:#fff; border-radius:16px; border:1px solid #e5e7eb; padding:22px; }
+  .panel-title { font-size:.95rem; font-weight:800; color:#111827; margin-bottom:14px; }
+
+  .emp-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid #f3f4f6; }
+  .emp-row:last-child { border-bottom:none; }
+  .emp-avatar { width:34px; height:34px; border-radius:50%; background:var(--brand-light); color:var(--brand); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.82rem; flex-shrink:0; }
+  .emp-name { font-weight:700; font-size:.88rem; color:#111827; }
+  .emp-off  { font-size:.76rem; color:#9ca3af; margin-top:1px; }
+  .off-tag  { background:#f3f4f6; color:#6b7280; border-radius:5px; padding:1px 6px; font-size:.72rem; font-weight:600; }
+
+  .btn-generate { background:var(--brand); color:#fff; font-weight:700; font-size:.95rem; padding:13px; border-radius:12px; border:none; width:100%; margin-top:18px; box-shadow:0 4px 18px rgba(79,70,229,.3); transition:transform .15s; }
+  .btn-generate:hover:not(:disabled) { background:var(--brand-dark); transform:translateY(-1px); }
+  .btn-generate:disabled { opacity:.6; cursor:not-allowed; }
+
+  .schedule-wrap { background:#fff; border-radius:16px; border:1px solid #e5e7eb; overflow:hidden; }
+  .schedule-header { background:var(--brand); color:#fff; padding:15px 20px; font-weight:700; font-size:.92rem; display:flex; align-items:center; gap:10px; }
+  .schedule-table th { background:#f8faff; font-size:.75rem; font-weight:700; color:#6b7280; text-transform:uppercase; text-align:center; padding:10px 6px; }
+  .schedule-table td { text-align:center; padding:9px 6px; vertical-align:middle; }
+  .schedule-table tr:hover td { background:#fafafe; }
+
+  .shift-morning   { background:#fef3c7; color:#92400e; border-radius:7px; padding:3px 9px; font-weight:700; font-size:.76rem; display:inline-block; min-width:42px; }
+  .shift-afternoon { background:#dbeafe; color:#1e40af; border-radius:7px; padding:3px 9px; font-weight:700; font-size:.76rem; display:inline-block; min-width:42px; }
+  .shift-night     { background:#ede9fe; color:#5b21b6; border-radius:7px; padding:3px 9px; font-weight:700; font-size:.76rem; display:inline-block; min-width:42px; }
+  .shift-off       { background:#f3f4f6; color:#9ca3af; border-radius:7px; padding:3px 9px; font-weight:700; font-size:.76rem; display:inline-block; min-width:42px; }
+
+  .empty-state { text-align:center; padding:56px 20px; color:#9ca3af; }
+  .empty-state i { font-size:2.8rem; display:block; color:#d1d5db; margin-bottom:10px; }
+  .spinner-wrap { display:none; align-items:center; gap:10px; font-size:.88rem; color:#6b7280; justify-content:center; margin-top:10px; }
+  .legend { display:flex; gap:12px; flex-wrap:wrap; padding:12px 20px; border-top:1px solid #f3f4f6; }
+  .legend-item { font-size:.76rem; font-weight:600; display:flex; align-items:center; gap:6px; }
+  .ai-badge { background:rgba(255,255,255,.2); font-size:.73rem; padding:3px 10px; border-radius:6px; }
+
+  .no-emp-notice { background:#fffbeb; border:1.5px dashed #fcd34d; border-radius:12px; padding:18px; text-align:center; font-size:.88rem; color:#92400e; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-3">
+  <div>
+    <h1 class="page-title">AI 교대 스케줄러</h1>
+    <p class="page-sub">CP-SAT 솔버가 모든 제약조건을 만족하는 최적 스케줄을 생성합니다.</p>
+  </div>
+  <div class="d-flex align-items-center gap-2" style="background:#fff; border:1.5px solid #e5e7eb; border-radius:12px; padding:8px 14px;">
+    <i class="bi bi-calendar-week" style="color:var(--brand); font-size:1rem;"></i>
+    <label for="weekPicker" style="font-size:.82rem; font-weight:700; color:#374151; margin:0; white-space:nowrap;">주 선택</label>
+    <input type="week" id="weekPicker" value="{{ current_week_value }}"
+      style="border:none; outline:none; font-size:.88rem; font-weight:700; color:var(--brand); background:transparent; cursor:pointer;" />
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- LEFT: 직원 패널 -->
+  <div class="col-lg-3">
+    <div class="panel-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="panel-title mb-0">직원 현황</div>
+        <a href="{% url 'employee_list' %}" class="btn btn-sm" style="font-size:.78rem; background:var(--brand-light); color:var(--brand); font-weight:700; border-radius:8px;">
+          <i class="bi bi-pencil me-1"></i>관리
+        </a>
+      </div>
+
+      {% if employees %}
+        {% for emp in employees %}
+        <div class="emp-row">
+          <div class="emp-avatar">{{ emp.name|first }}</div>
+          <div>
+            <div class="emp-name">{{ emp.name }}</div>
+            <div class="emp-off">
+              {% if emp.off_days %}
+                휴무:
+                {% for d in emp.off_days %}
+                  <span class="off-tag">
+                    {% if d == 0 %}월{% elif d == 1 %}화{% elif d == 2 %}수{% elif d == 3 %}목{% elif d == 4 %}금{% elif d == 5 %}토{% else %}일{% endif %}
+                  </span>
+                {% endfor %}
+              {% else %}
+                <span style="color:#d1d5db;">요청 없음</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+
+        <button class="btn-generate" id="generateBtn" {% if employees|length < 5 %}disabled title="최소 5명 필요"{% endif %}>
+          <i class="bi bi-lightning-charge-fill me-2"></i>AI 스케줄 생성
+          {% if employees|length < 5 %}<small style="display:block; font-size:.72rem; opacity:.8; margin-top:2px;">({{ employees|length }}/5명 등록됨)</small>{% endif %}
+        </button>
+        <div class="spinner-wrap" id="spinnerWrap">
+          <div class="spinner-border spinner-border-sm" style="color:var(--brand);" role="status"></div>
+          <span>최적 스케줄 계산 중...</span>
+        </div>
+      {% else %}
+        <div class="no-emp-notice">
+          <i class="bi bi-person-plus fs-3 d-block mb-2"></i>
+          {% if employees|length == 0 %}
+            등록된 직원이 없습니다.
+          {% else %}
+            현재 <strong>{{ employees|length }}명</strong> 등록됨<br/>
+            <small style="color:#b45309;">3교대 스케줄링은 최소 5명 필요</small>
+          {% endif %}<br/>
+          <a href="{% url 'employee_create' %}" style="color:var(--brand); font-weight:700;">직원 등록하러 가기 →</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- 제약조건 안내 -->
+    <div class="panel-card mt-3">
+      <div class="panel-title" style="font-size:.83rem;">
+        <i class="bi bi-shield-check me-1 text-success"></i>적용 제약조건
+      </div>
+      <ul style="padding-left:16px; font-size:.78rem; color:#6b7280; line-height:2.1; margin:0;">
+        <li>하루 1개 교대 또는 휴무</li>
+        <li>각 교대 최소 1명 배치</li>
+        <li>연속 야간 최대 2일</li>
+        <li>야간 다음날 오전 금지</li>
+        <li>주당 최소 2일 휴무</li>
+        <li>직원 휴무 요청 최대 반영</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- RIGHT: 스케줄 결과 -->
+  <div class="col-lg-9">
+    <div class="schedule-wrap">
+      <div class="schedule-header">
+        <i class="bi bi-calendar-check"></i>
+        <span id="scheduleTitle">주간 스케줄</span>
+        <span class="ai-badge ms-auto" id="aiBadge" style="display:none;">
+          <i class="bi bi-stars me-1"></i>AI 최적화 완료
+        </span>
+      </div>
+
+      <div class="empty-state" id="emptyState">
+        <i class="bi bi-calendar-plus"></i>
+        <div style="font-weight:700; font-size:.98rem; color:#374151; margin-bottom:6px;">
+          {% if employees|length >= 5 %}
+            [AI 스케줄 생성] 버튼을 눌러 시작하세요
+          {% elif employees|length > 0 %}
+            직원이 {{ employees|length }}명입니다. 5명 이상 등록해 주세요.
+          {% else %}
+            직원을 먼저 등록해 주세요 (최소 5명)
+          {% endif %}
+        </div>
+        <div style="font-size:.85rem;">근로기준법 자동 준수 · 휴무 요청 반영</div>
+      </div>
+
+      <div id="scheduleTableWrap" style="display:none; overflow-x:auto;">
+        <table class="table table-bordered schedule-table mb-0">
+          <thead>
+            <tr>
+              <th style="min-width:80px; text-align:left; padding-left:14px;">직원</th>
+              <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th><th>일</th>
+            </tr>
+          </thead>
+          <tbody id="scheduleTableBody"></tbody>
+        </table>
+        <div class="legend">
+          <span class="legend-item"><span class="shift-morning">오전</span> 07–15시</span>
+          <span class="legend-item"><span class="shift-afternoon">오후</span> 15–23시</span>
+          <span class="legend-item"><span class="shift-night">야간</span> 23–07시</span>
+          <span class="legend-item"><span class="shift-off">휴무</span></span>
+        </div>
+      </div>
+
+      <div class="empty-state" id="errorState" style="display:none;">
+        <i class="bi bi-exclamation-triangle" style="color:#ef4444;"></i>
+        <div style="font-weight:700; color:#374151; margin-bottom:6px;" id="errorMsg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+const SHIFT_CLS = { morning:'shift-morning', afternoon:'shift-afternoon', night:'shift-night', off:'shift-off' };
+const SHIFT_KO  = { morning:'오전', afternoon:'오후', night:'야간', off:'휴무' };
+
+const generateBtn     = document.getElementById('generateBtn');
+const spinnerWrap     = document.getElementById('spinnerWrap');
+const emptyState      = document.getElementById('emptyState');
+const scheduleWrap    = document.getElementById('scheduleTableWrap');
+const scheduleBody    = document.getElementById('scheduleTableBody');
+const errorState      = document.getElementById('errorState');
+const errorMsg        = document.getElementById('errorMsg');
+const aiBadge         = document.getElementById('aiBadge');
+const scheduleTitle   = document.getElementById('scheduleTitle');
+
+if (generateBtn) {
+  generateBtn.addEventListener('click', async () => {
+    generateBtn.disabled = true;
+    spinnerWrap.style.display = 'flex';
+    emptyState.style.display = 'none';
+    scheduleWrap.style.display = 'none';
+    errorState.style.display = 'none';
+    aiBadge.style.display = 'none';
+
+    try {
+      const weekValue = document.getElementById('weekPicker').value;
+      const res = await fetch("{% url 'generate_schedule' %}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify({ week: weekValue }),
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        errorMsg.textContent = data.error;
+        errorState.style.display = 'block';
+        return;
+      }
+
+      scheduleBody.innerHTML = '';
+      Object.entries(data.schedule).forEach(([name, days]) => {
+        const tr = document.createElement('tr');
+        let html = `<td class="fw-bold text-start" style="padding-left:14px;">${name}</td>`;
+        for (let d = 0; d < 7; d++) {
+          const s = days[String(d)] || 'off';
+          html += `<td><span class="${SHIFT_CLS[s]}">${SHIFT_KO[s]}</span></td>`;
+        }
+        tr.innerHTML = html;
+        scheduleBody.appendChild(tr);
+      });
+
+      scheduleTitle.textContent = `주간 스케줄 — ${data.week_label}`;
+      scheduleWrap.style.display = 'block';
+      aiBadge.style.display = 'inline-block';
+
+    } catch (err) {
+      errorMsg.textContent = '네트워크 오류가 발생했습니다. 다시 시도해 주세요.';
+      errorState.style.display = 'block';
+    } finally {
+      generateBtn.disabled = false;
+      spinnerWrap.style.display = 'none';
+    }
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'scheduler/base_app.html' %}
+{% block title %}{{ action }} — SmartShift{% endblock %}
+{% block nav_employees %}active{% endblock %}
+
+{% block extra_style %}
+<style>
+  .form-card { background:#fff; border-radius:16px; border:1px solid #e5e7eb; padding:32px; max-width:520px; }
+  .form-label { font-weight:700; font-size:.88rem; color:#374151; }
+  .form-control { border-radius:10px; border:1.5px solid #e5e7eb; padding:11px 14px; font-size:.93rem; }
+  .form-control:focus { border-color:var(--brand); box-shadow:0 0 0 3px rgba(79,70,229,.12); }
+
+  /* 요일 체크박스 커스텀 */
+  .day-checks { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .day-checks input[type=checkbox] { display:none; }
+  .day-checks label {
+    width:40px; height:40px; border-radius:50%; border:2px solid #e5e7eb;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.83rem; font-weight:700; color:#6b7280; cursor:pointer;
+    transition:all .15s;
+  }
+  .day-checks input[type=checkbox]:checked + label {
+    background:var(--brand); border-color:var(--brand); color:#fff;
+  }
+  .day-checks label:hover { border-color:var(--brand); color:var(--brand); }
+
+  .btn-save { background:var(--brand); color:#fff; font-weight:700; padding:12px 32px; border-radius:10px; border:none; }
+  .btn-save:hover { background:var(--brand-dark); color:#fff; }
+  .btn-cancel { background:#f3f4f6; color:#374151; font-weight:700; padding:12px 24px; border-radius:10px; border:none; }
+  .btn-cancel:hover { background:#e5e7eb; color:#111827; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <a href="{% url 'employee_list' %}" style="color:#6b7280; font-size:.88rem; text-decoration:none;">
+    <i class="bi bi-arrow-left me-1"></i>직원 목록으로
+  </a>
+  <h1 class="page-title mt-2">{{ action }}</h1>
+</div>
+
+<div class="form-card">
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <!-- 이름 -->
+    <div class="mb-4">
+      <label class="form-label">직원 이름 <span style="color:#ef4444;">*</span></label>
+      {{ form.name }}
+      {% if form.name.errors %}
+        <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
+      {% endif %}
+    </div>
+
+    <!-- 휴무 요청 요일 -->
+    <div class="mb-5">
+      <label class="form-label d-block">휴무 요청 요일 <span style="font-weight:400; color:#9ca3af;">(복수 선택 가능)</span></label>
+      <div class="day-checks">
+        {% for value, label in form.off_days.field.choices %}
+          <div>
+            <input type="checkbox" name="off_days" value="{{ value }}"
+              id="day_{{ value }}"
+              {% if value in form.off_days.value %}checked{% endif %}>
+            <label for="day_{{ value }}">{{ label }}</label>
+          </div>
+        {% endfor %}
+      </div>
+      {% if form.off_days.errors %}
+        <div class="text-danger small mt-1">{{ form.off_days.errors.0 }}</div>
+      {% endif %}
+    </div>
+
+    <div class="d-flex gap-3">
+      <button type="submit" class="btn-save btn">
+        <i class="bi bi-check-lg me-1"></i>{{ action }}
+      </button>
+      <a href="{% url 'employee_list' %}" class="btn-cancel btn">취소</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
