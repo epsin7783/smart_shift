@@ -6,7 +6,7 @@ SECRET_KEY = 'django-insecure-smart-shift-demo-key-change-in-production-2024'
 
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1","docinsight.kr", "www.docinsight.kr", "118.219.233.175"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1","smartshift.kr", "www.smartshift.kr", "118.219.233.175"]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
