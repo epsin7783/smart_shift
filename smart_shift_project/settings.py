@@ -8,6 +8,16 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1","smartshift.kr", "www.smartshift.kr", "118.219.233.175"]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://smartshift.kr",
+    "https://www.smartshift.kr",
+]
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = True
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
